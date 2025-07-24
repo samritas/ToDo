@@ -12,8 +12,9 @@ import {
   useUpdatePostMutation,
   useDeletePostMutation,
 } from "../../features/portsApi";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setSelectedTodo } from "../../features/postsSlice";
+import type { RootState } from "../../app/store";
 
 export interface Todo {
   userId: number;
@@ -35,7 +36,10 @@ export default function TodoApp() {
   const [deletePost] = useDeletePostMutation();
 
   const [showForm, setShowForm] = useState(false);
-  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const editingTodo = useSelector(
+    (state: RootState) => state.todo.selectedTodo
+  );
+  console.log("editingTodo",editingTodo)
   const [deleteModal, setDeleteModal] = useState<{
     show: boolean;
     todoId: number | null;
@@ -58,8 +62,8 @@ export default function TodoApp() {
 
   const updateTodo = async (id: number, title: string, body: string) => {
     await updatePost({ id, title, body, userId: 1 });
-    setEditingTodo(null);
     setShowForm(false);
+    dispatch(setSelectedTodo(null));
   };
 
   const deleteTodo = async (id: number) => {
@@ -67,11 +71,10 @@ export default function TodoApp() {
     setDeleteModal({ show: false, todoId: null });
   };
 
- const handleEdit = (todo: Todo) => {
-  dispatch(setSelectedTodo(todo));
-  setEditingTodo(todo);
-  setShowForm(true);
-};
+  const handleEdit = (todo: Todo) => {
+    dispatch(setSelectedTodo(todo));
+    setShowForm(true);
+  };
 
   const handleDelete = (id: number) => {
     setDeleteModal({ show: true, todoId: id });
@@ -110,7 +113,6 @@ export default function TodoApp() {
           <Button
             variant="primary"
             onClick={() => {
-              setEditingTodo(null);
               setShowForm(true);
             }}
             className="flex items-center space-x-2"
@@ -143,7 +145,7 @@ export default function TodoApp() {
               </div>
             </div>
           ) : (
-            posts.map((todo : Todo, index:number) => (
+            posts.map((todo: Todo, index: number) => (
               <TodoCard
                 key={todo.id}
                 todo={todo}
@@ -167,7 +169,7 @@ export default function TodoApp() {
             }
             onCancel={() => {
               setShowForm(false);
-              setEditingTodo(null);
+              dispatch(setSelectedTodo(null));
             }}
           />
         )}
