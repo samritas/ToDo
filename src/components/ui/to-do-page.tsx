@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-
+import { useState } from "react";
 import { CheckCircle2, Plus } from "lucide-react";
 import { TodoCard } from "../todo-card";
 import { TodoForm } from "../todo-form";
 import { ConfirmationModal } from "../confirmation-modal";
-import {
-  fetchPosts,
-  createPost,
-  updatePost,
-  deletePost,
-} from "../../features/postsThunks";
-import type { RootState, AppDispatch } from "../../app/store";
 import { Button } from "../button";
+import {
+  useGetPostsQuery,
+  useAddPostMutation,
+  useUpdatePostMutation,
+  useDeletePostMutation,
+} from "../../features/portsApi";
+import { useDispatch } from "react-redux";
+import { setSelectedTodo } from "../../features/postsSlice";
 
 export interface Todo {
   userId: number;
@@ -30,10 +29,10 @@ export interface PostPayload {
 }
 
 export default function TodoApp() {
-  const dispatch = useDispatch<AppDispatch>();
-
-  const postsState = useSelector((state: RootState) => state.posts);
-  const { posts, loading, error } = postsState;
+  const { data: posts = [], isLoading, error } = useGetPostsQuery({});
+  const [addPost] = useAddPostMutation();
+  const [updatePost] = useUpdatePostMutation();
+  const [deletePost] = useDeletePostMutation();
 
   const [showForm, setShowForm] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -45,35 +44,34 @@ export default function TodoApp() {
     todoId: null,
   });
 
-  useEffect(() => {
-    dispatch(fetchPosts());
-  }, [dispatch]);
+  const dispatch = useDispatch();
 
-  const addTodo = (title: string, body: string) => {
+  const addTodo = async (title: string, body: string) => {
     const newTodo: PostPayload = {
       title,
       body,
       userId: 1,
     };
-    dispatch(createPost(newTodo));
+    await addPost(newTodo);
     setShowForm(false);
   };
 
-  const updateTodo = (id: number, title: string, body: string) => {
-    dispatch(updatePost({ id, data: { title, body, userId: 1 } }));
+  const updateTodo = async (id: number, title: string, body: string) => {
+    await updatePost({ id, title, body, userId: 1 });
     setEditingTodo(null);
     setShowForm(false);
   };
 
-  const deleteTodo = (id: number) => {
-    dispatch(deletePost(id));
+  const deleteTodo = async (id: number) => {
+    await deletePost(id);
     setDeleteModal({ show: false, todoId: null });
   };
 
-  const handleEdit = (todo: Todo) => {
-    setEditingTodo(todo);
-    setShowForm(true);
-  };
+ const handleEdit = (todo: Todo) => {
+  dispatch(setSelectedTodo(todo));
+  setEditingTodo(todo);
+  setShowForm(true);
+};
 
   const handleDelete = (id: number) => {
     setDeleteModal({ show: true, todoId: id });
@@ -107,7 +105,7 @@ export default function TodoApp() {
           </p>
         </div>
 
-        {/* add Todo*/}
+        {/* add Todo */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
           <Button
             variant="primary"
@@ -123,10 +121,14 @@ export default function TodoApp() {
         </div>
 
         {/* Todo List */}
-        {loading && <p className="text-center text-white">Loading todos...</p>}
-        {error && <p className="text-center text-red-400">Error: {error}</p>}
+        {isLoading && (
+          <p className="text-center text-white">Loading todos...</p>
+        )}
+        {error && (
+          <p className="text-center text-red-400">Error: {String(error)}</p>
+        )}
         <div className="space-y-4 mt-8 mb-8">
-          {posts.length === 0 && !loading ? (
+          {posts.length === 0 && !isLoading ? (
             <div className="text-center py-16">
               <div className="bg-white/10 backdrop-blur-md rounded-3xl p-12 border border-white/20 max-w-md mx-auto">
                 <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -141,7 +143,7 @@ export default function TodoApp() {
               </div>
             </div>
           ) : (
-            posts.map((todo, index) => (
+            posts.map((todo : Todo, index:number) => (
               <TodoCard
                 key={todo.id}
                 todo={todo}

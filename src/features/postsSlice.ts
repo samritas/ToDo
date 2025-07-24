@@ -1,51 +1,24 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { fetchPosts, createPost, updatePost, deletePost } from './postsThunks';
-import type { Post } from './postsTypes';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import type { Todo } from '../components/ui/to-do-page';
 
-interface PostsState {
-  posts: Post[];
-  loading: boolean;
-  error: string | null;
+interface TodoState {
+  selectedTodo: Todo | null;
 }
 
-const initialState: PostsState = {
-  posts: [],
-  loading: false,
-  error: null,
+const initialState: TodoState = {
+  selectedTodo: null,
 };
 
-const postsSlice = createSlice({
-  name: 'posts',
+const todoSlice = createSlice({
+  name: 'todo',
   initialState,
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
-      // GET
-      .addCase(fetchPosts.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(fetchPosts.fulfilled, (state, action) => {
-        state.loading = false;
-        state.posts = action.payload;
-      })
-      .addCase(fetchPosts.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message ?? 'Failed to fetch posts';
-      })
-      // POST
-      .addCase(createPost.fulfilled, (state, action) => {
-        state.posts.unshift(action.payload);
-      })
-      // PUT
-      .addCase(updatePost.fulfilled, (state, action) => {
-        const index = state.posts.findIndex((p) => p.id === action.payload.id);
-        if (index !== -1) state.posts[index] = action.payload;
-      })
-      // DELETE
-      .addCase(deletePost.fulfilled, (state, action) => {
-        state.posts = state.posts.filter((p) => p.id !== action.payload);
-      });
+  reducers: {
+    setSelectedTodo: (state, action: PayloadAction<Todo | null>) => {
+      state.selectedTodo = action.payload;
+    },
   },
 });
 
-export default postsSlice.reducer;
+export const { setSelectedTodo } = todoSlice.actions;
+export default todoSlice.reducer;
